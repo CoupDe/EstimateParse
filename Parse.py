@@ -1,5 +1,6 @@
 from pathlib import Path
 import pandas as pd
+import json
 
 desktop_path = Path('~/Desktop').expanduser()
 print(desktop_path)
@@ -58,45 +59,56 @@ class EstimateParser:
 
 
 class ParseFile(EstimateParser):
-    full_price = None
-    switcher = {"локальна": 11, "основан": 8, "метная": 11}
 
-
-    def get_file(self):
+    def get_rows(self):
         rows = []
-        file = str(self.full_path)
-        # Почему приходится распаковывать Dataframe из List
+        file = str(self.full_path)  # Почему приходится распаковывать Dataframe из List
         # Skiprows с методом range применяется для отсечения не нужных данных для сбора данных
         # !!!Как понять количество строк в файле???
-        df = pd.read_html(file, skiprows=range(30, 10000), thousands="True")[0].dropna(axis='index', how='all')
-        df.to_csv("2.csv")
-        for s in df.index.tolist():
-            rows.append(ParseFile.get_pure_rows(self, df.loc[s]))
-        print(rows)
-        row = sorted(list(set(df.loc[12].dropna())))  # Delete rows with all val nan from pd.series
-        for s in row:
-            for p in ParseFile.switcher.keys():
-                if p in str(s):
-                    print(ParseFile.switcher[p])
-            # !!! Почему я не могу указать self.get_indicators(f) хотя метод находится в
-            # кл, насколько вообще правильно спользовать метод класса в классе.
-        print(df.shape, row)
-        df.to_csv("1.csv")
-        values_list = df.values.tolist()
-        # Как сделать перебор искомых ывражений
-        local_num = [i[s[0] + 1] for i in values_list[:15] for s in enumerate(i) if "локальна" in str(s[1]).lower()]
-        # df.to_excel('any.xlsx')
-        local_num += [i[s[0] + 2] for i in values_list[:15] for s in enumerate(i) if "основан" in str(s[1]).lower()]
-        local_num += [i[s[0] + 2] for i in values_list[7:9] for s in enumerate(i) if
-                      "на" in str(s[1]).lower() and len(s) == 2]
+        df = pd.read_html(file, skiprows=range(17, 10000), thousands="True")[0].dropna(axis='index', how='all')
+        for s in df.index.tolist():  # """ !!! Почему я не могу указать self.get_indicators(
+            rows.append(ParseFile.get_pure_row(df.loc[s]))  # хотя метод находится в кл, насколько вообще правильно
+        return rows  # спользовать метод класса в классе.
 
-    def get_pure_rows(self, df):
+    @staticmethod
+    def get_pure_row(df):
         return sorted(list(set(df.dropna())))
 
     def get_indicators(self, row):
         pass
         # if switcher.items():
         #     return switcher.get(str(row), "invalid")
+
+
+class Estimate(EstimateParser):
+    construction_object = ""
+    local_num = ""
+    type_work = ""
+    workdoc_code = ""
+    total_price = ""
+    inventory_num = ""
+
+    def set_local_num(self, arg):
+        self.local_num = arg.lower().split("ин")[0]
+        if len(arg.lower().split("ин")) > 1:
+            self.inventory_num = "ин" + arg.lower().split("ин")[1]
+
+    def to_json(self):
+        json.dumps(self.__dict__)
+
+    switcher = {"локальн": set_local_num,               # !!!Почему я могу использовать вызов функции без аргумента??
+                "основ": 1
+                }
+
+    @classmethod
+    def search_data(cls, dt):
+        for outer in dt:
+            for inner in enumerate(outer):
+                for switch in cls.switcher.keys():
+                    if switch in inner[1].lower():
+                        cls.switcher[switch](cls, outer[0])
+                        print([outer[0]])
+        pass
 
 
 anotherPath = r"C:\Users\Вадим\Desktop\Estimate\Сметы\00.АС\Копия s955096311.xlsx"
@@ -110,4 +122,8 @@ for x, y, z in pf:
     EstimateParser(x, x.parent, x, z)
 EstimateParser.count_pack()
 pe = ParseFile
-pe.get_file(EstimateParser.all_instances[1])
+
+rows = pe.get_rows(EstimateParser.all_instances[1])
+print(rows)
+es = Estimate
+es.search_data(rows)
