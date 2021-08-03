@@ -47,7 +47,7 @@ class EstimateParser:
         file_name = name.stem[1:len(name.stem) - 1] + "3"
         return file_name
 
-    """Проверка комплектности редактируемых файлов и программных"""
+    """Проверка комплектности редактируемых файлов и программных файлов"""
 
     @classmethod
     def count_pack(cls):
@@ -58,16 +58,29 @@ class EstimateParser:
 
 
 class ParseFile(EstimateParser):
+    full_price = None
+    switcher = {"локальна": 11, "основан": 8, "метная": 11}
+
 
     def get_file(self):
+        rows = []
         file = str(self.full_path)
         # Почему приходится распаковывать Dataframe из List
         # Skiprows с методом range применяется для отсечения не нужных данных для сбора данных
         # !!!Как понять количество строк в файле???
-        df = pd.read_html(file, skiprows=range(30, 10000), thousands="True")[0]
-        # table[0].to_]excel("path_to_file.xlsx", sheet_name="Sheet1", float_format="True")
-        ss = df.loc[12].tolist()
-        print(df.shape,  ss)
+        df = pd.read_html(file, skiprows=range(30, 10000), thousands="True")[0].dropna(axis='index', how='all')
+        df.to_csv("2.csv")
+        for s in df.index.tolist():
+            rows.append(ParseFile.get_pure_rows(self, df.loc[s]))
+        print(rows)
+        row = sorted(list(set(df.loc[12].dropna())))  # Delete rows with all val nan from pd.series
+        for s in row:
+            for p in ParseFile.switcher.keys():
+                if p in str(s):
+                    print(ParseFile.switcher[p])
+            # !!! Почему я не могу указать self.get_indicators(f) хотя метод находится в
+            # кл, насколько вообще правильно спользовать метод класса в классе.
+        print(df.shape, row)
         df.to_csv("1.csv")
         values_list = df.values.tolist()
         # Как сделать перебор искомых ывражений
@@ -77,9 +90,13 @@ class ParseFile(EstimateParser):
         local_num += [i[s[0] + 2] for i in values_list[7:9] for s in enumerate(i) if
                       "на" in str(s[1]).lower() and len(s) == 2]
 
-    #def get_indicators(self, row):
+    def get_pure_rows(self, df):
+        return sorted(list(set(df.dropna())))
 
-
+    def get_indicators(self, row):
+        pass
+        # if switcher.items():
+        #     return switcher.get(str(row), "invalid")
 
 
 anotherPath = r"C:\Users\Вадим\Desktop\Estimate\Сметы\00.АС\Копия s955096311.xlsx"
@@ -94,4 +111,3 @@ for x, y, z in pf:
 EstimateParser.count_pack()
 pe = ParseFile
 pe.get_file(EstimateParser.all_instances[1])
-
