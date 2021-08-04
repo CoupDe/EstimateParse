@@ -11,6 +11,7 @@ class EstimateParser:
     estimate_count = 0
     all_instances = []
 
+    #  Наверно правильнее создавать не каждый экземпляр с параметрами, а один экземпляр со списками под каждое поле
     def __init__(self, full_path, folder_name, file_name, program_file):
         self.full_path = full_path
         self.folder_name = folder_name
@@ -59,6 +60,7 @@ class EstimateParser:
 
 
 class ParseFile(EstimateParser):
+    """Получение очишеных от nan строк с помощью Pandas"""
 
     def get_rows(self):
         rows = []
@@ -68,47 +70,68 @@ class ParseFile(EstimateParser):
         df = pd.read_html(file, skiprows=range(17, 10000), thousands="True")[0].dropna(axis='index', how='all')
         for s in df.index.tolist():  # """ !!! Почему я не могу указать self.get_indicators(
             rows.append(ParseFile.get_pure_row(df.loc[s]))  # хотя метод находится в кл, насколько вообще правильно
-        return rows  # спользовать метод класса в классе.
+        return rows, EstimateParser.all_instances[1]  # спользовать метод класса в классе.
 
     @staticmethod
     def get_pure_row(df):
         return sorted(list(set(df.dropna())))
 
-    def get_indicators(self, row):
-        pass
-        # if switcher.items():
-        #     return switcher.get(str(row), "invalid")
 
-
-class Estimate(EstimateParser):
-    construction_object = ""
-    local_num = ""
-    type_work = ""
-    workdoc_code = ""
-    total_price = ""
-    inventory_num = ""
+class EstimateABC(EstimateParser):
+    construction_object = None
+    local_num = None
+    type_work = None
+    workdoc_code = None
+    total_price = (0, "")
+    inventory_num = None
+    price_year = None
+    all_instances_estimate = []
 
     def set_local_num(self, arg):
-        self.local_num = arg.lower().split("ин")[0]
-        if len(arg.lower().split("ин")) > 1:
-            self.inventory_num = "ин" + arg.lower().split("ин")[1]
+        if "(" and ")" not in arg[0]:
+            self.local_num = arg[0].lower().split("ин")[0]
+            if len(arg[0].lower().split("ин")) > 1:
+                self.inventory_num = "ин" + arg[0].lower().split("ин")[1]
+
+    def set_workdoc_code(self, arg):
+        self.workdoc_code = arg[0]
+
+    def set_total_price(self, arg):
+        if "N" not in arg[0]:
+            self.total_price = float(arg[0].replace(",", ".")), arg[2]
+
+    def set_price_year(self, arg):
+        self.price_year = arg[0]
+
+    def set_type_work(self, arg):
+        self.type_work = arg
+
+    def set_construction_object(self, arg):
+        self.construction_object = arg
 
     def to_json(self):
         json.dumps(self.__dict__)
 
-    switcher = {"локальн": set_local_num,               # !!!Почему я могу использовать вызов функции без аргумента??
-                "основ": 1
+    switcher = {"локальн": set_local_num,  # !!!Почему я могу использовать вызов функции без аргумента??
+                "основ": set_workdoc_code,
+                "стоим": set_total_price,
+                "цена": set_price_year
                 }
 
     @classmethod
     def search_data(cls, dt):
-        for outer in dt:
+        lrow = dt[0]
+        for outer in lrow:
             for inner in enumerate(outer):
                 for switch in cls.switcher.keys():
                     if switch in inner[1].lower():
-                        cls.switcher[switch](cls, outer[0])
+                        cls.switcher[switch](cls, outer)  # Почему pycharm выдаёт тут замечание? Неопредлена функция?
                         print([outer[0]])
-        pass
+        if "наименов" in lrow[2][0]:
+            cls.set_construction_object(cls, lrow[1][0])
+        if "на" == lrow[5][1]:
+            cls.set_type_work(cls, lrow[5][0])
+        return es, dt[1]
 
 
 anotherPath = r"C:\Users\Вадим\Desktop\Estimate\Сметы\00.АС\Копия s955096311.xlsx"
@@ -116,8 +139,6 @@ estimatePath = r"C:\Users\Вадим\Desktop\Estimate\Сметы"
 # ABC expansion
 rf = EstimateParser.get_read_file(estimatePath)
 pf = EstimateParser.get_program_file(rf)
-# ep = [EstimateParser(full_path, folder_name, file_name, program_file) for full_path, folder_name, file_name,
-# program_file in pf[x, y, z]]
 for x, y, z in pf:
     EstimateParser(x, x.parent, x, z)
 EstimateParser.count_pack()
@@ -125,5 +146,9 @@ pe = ParseFile
 
 rows = pe.get_rows(EstimateParser.all_instances[1])
 print(rows)
-es = Estimate
-es.search_data(rows)
+es = EstimateABC
+d = es.search_data(rows)
+
+print(vars(d[0]))
+print(d[0].construction_object)
+print(d[1].__dict__)
