@@ -1,3 +1,4 @@
+import uuid
 from pathlib import Path
 import pandas as pd
 import json
@@ -9,29 +10,22 @@ print(desktop_path)
 
 
 class Estimate:
+    id_estimate = ""
     estimate_count = 0
     all_instances = []
 
-    def __init__(self, readfile, type):
+    def __init__(self, readfile, ext):
+        self.id_estimate = uuid.uuid4()
         self.estimate_path = {"folder_path": readfile.parent,
                               "read_file_path": readfile,
-                              "estimate_type": type,
+                              "estimate_type": ext,
                               "program_file": self.get_program_file(readfile)}
-
-        self.all_instances.append(self)
+        self.all_instances.append(self)  # Почему я вижу список из инстансов в каждои инстансе, но при выводе
+        # __dict__ я не вижу их в каждом инстансе
         self.__class__.estimate_count += 1
-
-    pass
 
     def get_path_estimate(self):
         pass
-
-    #  Наверно правильнее создавать не каждый экземпляр с параметрами, а один экземпляр со списками под каждое поле
-    # def __init__(self, full_path, folder_name, file_name, program_file, **estimate_path):
-    #     self.full_path = full_path
-    #     self.folder_name = folder_name 111
-    #     self.file_name = file_name 11
-    #     self.program_file = program_file
 
     @staticmethod  # Get reading file
     def get_read_file(path):
@@ -50,8 +44,7 @@ class Estimate:
 
     @classmethod
     def get_program_name(cls, name):
-        file_name = name.stem[1:len(name.stem) - 1] + "3"
-        return file_name
+        pass
 
     """Проверка комплектности редактируемых файлов и программных файлов"""
 
@@ -64,14 +57,6 @@ class Estimate:
 
 
 class EstimateABC(Estimate):
-    construction_object = None
-    local_num = None
-    type_work = None
-    workdoc_code = None
-    total_price = (0, "")
-    inventory_num = None
-    price_year = 0
-    all_instances_estimate = []
 
     def __init__(self, rd):
         super().__init__(rd, "abc")  # Этот класс вызывается в 1-ю очередь и из него формируется родитель, можно ли
@@ -85,28 +70,25 @@ class EstimateABC(Estimate):
         file = str(self.estimate_path["read_file_path"])  # Почему приходится распаковывать Dataframe из List
         # Skiprows с методом range применяется для отсечения не нужных данных для сбора данных
         # !!!Как понять количество строк в файле???
-        # if "xls" in file:
-        #     df = pd.read_excel(file, nrows=17, thousands="True")
-        # else:
         try:
-            df = pd.read_html(file, skiprows=range(17, 10000), thousands="True")[0].dropna(axis='index', how='all')
+            df = pd.read_html(file, skiprows=range(20, 10000), thousands="True")[0].dropna(axis='index', how='all')
         except ImportError:
-            df = pd.read_excel(file, nrows=17, thousands="True")
-        print(df)
-
+            df = pd.read_excel(file, skiprows=range(20, 10000), thousands="True", header=None).dropna(axis='index',
+                                                                                                      how='all')
         for s in df.index.tolist():  # """ !!! Почему я не могу указать self.get_indicators(
             rows.append(self.get_pure_row(df.loc[s]))  # хотя метод находится в кл, насколько вообще правильно
-        return rows, Estimate.all_instances[1]  # спользовать метод класса в классе.
+        self.row = rows  # Инстанс уже создан почему он предлагет его инициализисровать по новой?
+        print(self.row)  # спользовать метод класса в классе. Результат прикрепляется к инстансу
 
     @staticmethod
     def get_pure_row(df):
         return sorted(list(set(df.dropna())))
 
     def set_local_num(self, arg):
-        if "(" and ")" not in arg[0]:
+        if "(" and ")" not in arg[0] or "взам" in arg[0].lower():
             self.local_num = arg[0].lower().split("ин")[0]
             if len(arg[0].lower().split("ин")) > 1:
-                self.inventory_num = "ин" + arg[0].lower().split("ин")[1]
+                self.inventory_num = "ин" + arg[0].lower().replace("\n", " ").split("ин", maxsplit=1)[1]
 
     def set_workdoc_code(self, arg):
         self.workdoc_code = arg[0]
@@ -148,17 +130,15 @@ class EstimateABC(Estimate):
     def get_program_name(cls, name):
         return name.stem[1:len(name.stem) - 1] + "3"
 
-    @classmethod
-    def search_data(cls, dt):
-        lrow = dt[0]
+    def search_data(self):
+        lrow = self.row
         for outer in lrow:
             for inner in enumerate(outer):
-                for switch in cls.switcher.keys():
+                for switch in self.switcher.keys():
                     if switch in inner[1].lower():
-                        cls.switcher[switch](cls, outer)  # Почему pycharm выдаёт тут замечание? Неопредлена функция?
-                        print([outer[0]])
-        if "наименов" in lrow[2][0]:
-            cls.set_construction_object(cls, lrow[1][0])
-        if "на" == lrow[5][1]:
-            cls.set_type_work(cls, lrow[5][0])
-        return cls, dt[1]
+                        self.switcher[switch](self, outer)  # Почему pycharm выдаёт тут замечание? Неопредлена функция?
+        if "наименов" in lrow[2]:
+            self.set_construction_object(self, lrow[1])
+        if "на" == lrow[5]:
+            self.set_type_work(self, lrow[5])
+        del self.row

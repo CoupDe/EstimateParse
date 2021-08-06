@@ -13,16 +13,24 @@ for s in rf:
 Estimate.count_pack()
 
 for instance in Estimate.all_instances:
-    print(instance.estimate_path["read_file_path"])
+    print(instance.estimate_path["read_file_path"])  # Del ###
     instance.get_rows()
 
+for instance in Estimate.all_instances:
+    instance.search_data()
 
-rows = pe.get_rows(Estimate.all_instances[3])
-print(rows)
-es = EstimateABC
-d = es.search_data(rows)
-estimates = Estimate()
-print(estimates.__dict__)
-print(vars(d[0]))
-print(d[0].construction_object)
-print(d[1].__dict__)
+for instance in Estimate.all_instances:
+    print(instance.__dict__)
+
+print(Estimate.__dict__)
+
+# choice = input("Вы хотите сформировать папку со сметами: ")
+# while choice.lower() != {"n", "y"}:
+#     if choice.lower() == "y":
+#         print("Da")
+#         break
+#     elif choice.lower() == "n":
+#         print("No")
+#         break
+#     else:
+#         choice = input(f"Не вверный ввод {choice}s\nПовторите ввод: ")
