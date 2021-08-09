@@ -1,10 +1,8 @@
-import uuid
+import hashlib
 from pathlib import Path
 import pandas as pd
 import json
 
-desktop_path = Path('~/Desktop').expanduser()
-print(desktop_path)
 
 """This is class parse estimate from program ABC, Bagira"""
 
@@ -15,11 +13,11 @@ class Estimate:
     all_instances = []
 
     def __init__(self, readfile, ext):
-        self.id_estimate = uuid.uuid4()
         self.estimate_path = {"folder_path": readfile.parent,
                               "read_file_path": readfile,
                               "estimate_type": ext,
                               "program_file": self.get_program_file(readfile)}
+        self.id_estimate = str(hash(self.estimate_path["program_file"]))[1:7]
         self.all_instances.append(self)  # Почему я вижу список из инстансов в каждои инстансе, но при выводе
         # __dict__ я не вижу их в каждом инстансе
         self.__class__.estimate_count += 1
@@ -86,25 +84,26 @@ class EstimateABC(Estimate):
 
     def set_local_num(self, arg):
         if "(" and ")" not in arg[0] or "взам" in arg[0].lower():
-            self.local_num = arg[0].lower().split("ин")[0]
+            self.local_num = arg[0].lower().split("ин")[0].strip()
             if len(arg[0].lower().split("ин")) > 1:
-                self.inventory_num = "ин" + arg[0].lower().replace("\n", " ").split("ин", maxsplit=1)[1]
+                self.inventory_num = "ин" + arg[0].lower().replace("\n", " ").split("ин", maxsplit=1)[1].strip()
 
     def set_workdoc_code(self, arg):
-        self.workdoc_code = arg[0]
+        self.workdoc_code = arg[0].strip()  # !!! Почему он предалагает перенести в конструктор, когда я не
+        # инициализирую эти данные при создании экземпляра, а в процессе обработки
 
     def set_total_price(self, arg):
         if "N" not in arg[0]:
-            self.total_price = float(arg[0].replace(",", ".")), arg[2]
+            self.total_price = float(arg[0].replace(",", ".").strip()), arg[2]
 
     def set_price_year(self, arg):
-        self.price_year = arg[0]
+        self.price_year = arg[0].strip()
 
     def set_type_work(self, arg):
-        self.type_work = arg
+        self.type_work = arg.strip()
 
     def set_construction_object(self, arg):
-        self.construction_object = arg
+        self.construction_object = arg.strip()
 
     def to_json(self):
         json.dumps(self.__dict__)

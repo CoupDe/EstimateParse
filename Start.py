@@ -1,4 +1,7 @@
-from Parse import Estimate, EstimateABC
+from Parse import Estimate, EstimateABC  # !!! Я использую одни и те-же библеотеки в разных  модулях, как правильно
+# записать импорт что-бы библиотека распространялясь на все остальные модули из одного места
+from Export import EstimateExport
+
 
 anotherPath = r"C:\Users\Вадим\Desktop\Estimate\Сметы\00.АС\Копия s955096311.xlsx"
 estimatePath = r"C:\Users\Вадим\Desktop\Estimate\Сметы"
@@ -24,6 +27,7 @@ for instance in Estimate.all_instances:
 
 print(Estimate.__dict__)
 
+
 # choice = input("Вы хотите сформировать папку со сметами: ")
 # while choice.lower() != {"n", "y"}:
 #     if choice.lower() == "y":
@@ -34,3 +38,5 @@ print(Estimate.__dict__)
 #         break
 #     else:
 #         choice = input(f"Не вверный ввод {choice}s\nПовторите ввод: ")
+ex = EstimateExport
+ex.get_path(Estimate.all_instances[1])
