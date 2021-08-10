@@ -105,6 +105,9 @@ class EstimateABC(Estimate):
     def set_construction_object(self, arg):
         self.construction_object = arg.strip()
 
+    def set_date_parse(self, arg):
+        self.date_parse = arg.strip()
+
     def to_json(self):
         json.dumps(self.__dict__)
 
