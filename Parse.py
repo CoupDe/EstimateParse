@@ -76,7 +76,7 @@ class EstimateABC(Estimate):
         for s in df.index.tolist():  # """ !!! Почему я не могу указать self.get_indicators(
             rows.append(self.get_pure_row(df.loc[s]))  # хотя метод находится в кл, насколько вообще правильно
         self.row = rows  # Инстанс уже создан почему он предлагет его инициализисровать по новой?
-        print(self.row)  # спользовать метод класса в классе. Результат прикрепляется к инстансу
+                              # спользовать метод класса в классе. Результат прикрепляется к инстансу
 
     @staticmethod
     def get_pure_row(df):
@@ -139,8 +139,13 @@ class EstimateABC(Estimate):
                 for switch in self.switcher.keys():
                     if switch in inner[1].lower():
                         self.switcher[switch](self, outer)  # Почему pycharm выдаёт тут замечание? Неопредлена функция?
-        if "наименов" in lrow[2]:
-            self.set_construction_object(self, lrow[1])
-        if "на" == lrow[5]:
-            self.set_type_work(self, lrow[5])
+        if "наименов" in lrow[2][0]:
+            self.set_construction_object(lrow[1][0])
+            try:
+                lrow[5][1]
+            except IndexError:
+                lrow[6]
+        if "на" == lrow[5][1]:
+            self.set_type_work(lrow[5][0])
+            # self.set_type_work(lrow[6])
         del self.row

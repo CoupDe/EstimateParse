@@ -1,6 +1,10 @@
 import datetime as dt
 from pathlib import Path
 import shutil
+from typing import List, Optional
+
+import pydantic
+from pydantic import BaseModel
 
 from Parse import Estimate, EstimateABC
 
@@ -28,3 +32,19 @@ class EstimateExport:
             Path.mkdir(estimate_path)
         [shutil.copy(s, estimate_path) for s in fp]
         EstimateABC.set_date_parse(obj, dt.date.today().strftime("%d-%m-%y"))
+        print('compiled:', pydantic.compiled)
+
+
+class EstimateModel(BaseModel):
+    estimate_path: dict
+    id_estimate: int
+    price_year: str
+    local_num: str
+    inventory_num: str
+    workdoc_code: str
+    total_price: tuple[float, str]
+    date_parse: str
+    type_work: str
+
+
+
