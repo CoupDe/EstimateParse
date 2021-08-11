@@ -59,3 +59,10 @@ class ImportEstimate:
     @staticmethod
     def read_json(path):
         return [z for z in list(Path(path).glob("**/*.json"))]
+
+    @staticmethod
+    def import_json(file):
+        s = json.load(file)
+        estimate = EstimateModel(**s)
+        print(type(estimate))
+        return estimate
