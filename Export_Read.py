@@ -2,7 +2,8 @@ import datetime as dt
 import json
 import shutil
 from pathlib import Path
-
+import pandas as pd
+from pandas.io.json import json_normalize
 from pydantic import BaseModel
 
 from Parse import EstimateABC
@@ -13,7 +14,6 @@ Path.mkdir(desktop_path, exist_ok=True)
 
 
 class EstimateModel(BaseModel):
-    id_estimate: int
     local_num: str
     workdoc_code: str
     type_work: str
@@ -23,6 +23,7 @@ class EstimateModel(BaseModel):
     inventory_num: str
     date_parse: str
     estimate_path: dict
+    id_estimate: int
 
 
 class EstimateExport:
@@ -60,9 +61,27 @@ class ImportEstimate:
     def read_json(path):
         return [z for z in list(Path(path).glob("**/*.json"))]
 
+    # @staticmethod
+    # def import_json(file):
+    #     with open(file, "r", encoding="utf-8") as f:
+    #         data = json.load(f)     # Загрузка JSON
+    #         estimate = EstimateModel(**data)  # Создание модели pydantic
+    #         print(type(estimate), estimate)
+    #         estimates = pd.DataFrame(estimate)
+    #         # print(estimates)
+    #     # return estimate
+
     @staticmethod
     def import_json(file):
-        s = json.load(file)
-        estimate = EstimateModel(**s)
-        print(type(estimate))
+        with open(file, "r", encoding="utf-8") as f:
+            data = json.load(f)  # Загрузка JSON
+            # estimate = EstimateModel(**data)  # Создание модели pydantic
+            # print(type(estimate), estimate)
+            estimate = pd.json_normalize(data)
         return estimate
+
+    @staticmethod  # Объединение сметв в один datafraame
+    def create_df(df):
+        estimates = pd.concat(df)
+        estimates.to_excel("x.xlsx")
+        print(estimates)
