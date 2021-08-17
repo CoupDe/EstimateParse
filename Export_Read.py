@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 from pandas.io.json import json_normalize
 from pydantic import BaseModel
-
+import numpy as np
 from Parse import EstimateABC
 
 desktop_path = Path('~/Desktop').expanduser() / "Estimates" / dt.date.today().strftime("%d-%m-%y")
@@ -24,6 +24,7 @@ class EstimateModel(BaseModel):
     date_parse: str
     estimate_path: dict
     id_estimate: int
+    new_path: str = None
 
 
 class EstimateExport:
@@ -31,6 +32,7 @@ class EstimateExport:
     @staticmethod
     def export_json(estimate_path, obj):
         es = EstimateModel(**obj.__dict__)
+        es.new_path = estimate_path / obj.estimate_path["read_file_path"].name
         json_file = Path(estimate_path / (es.estimate_path["machine_num"] + ".json"))
         with open(json_file, "w", encoding="utf-8") as f:
             json.dump(json.loads(es.json()), f, indent=4, ensure_ascii=False)
@@ -80,8 +82,19 @@ class ImportEstimate:
             estimate = pd.json_normalize(data)
         return estimate
 
+    @staticmethod
+    def make_hyperlink(x, y):
+        return '=HYPERLINK("%s", "%s")' % (x, y)
+
     @staticmethod  # Объединение сметв в один datafraame
     def create_df(df):
         estimates = pd.concat(df)
-        estimates.to_excel("x.xlsx")
-        print(estimates)
+        estimates.reset_index(drop=True, inplace=True)
+        print(estimates["new_path"])
+        estimates.rename(columns={"id_estimate": "id"}, inplace=True)
+        estimates["local_num"] = estimates.apply(lambda x: ImportEstimate.make_hyperlink(x["new_path"], x["local_num"]),
+                                                 axis=1)  # Создать гиперссылку
+        estimates.style.set_properties(**{'background-color': 'yellow'})
+        estimates.style.applymap(lambda x: "background-color: red" if x != "" else "background-color: white")
+        print(estimates.new_path)
+        estimates.to_excel("x.xlsx", engine='openpyxl')

@@ -6,8 +6,6 @@ import json
 
 """This is class parse estimate from program ABC, Bagira"""
 
-PYTHONHASHSEED = 1
-
 
 class Estimate:
     id_estimate = ""
